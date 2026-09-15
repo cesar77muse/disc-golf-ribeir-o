@@ -42,7 +42,9 @@ function AuthPage() {
       if (mode === "signup") {
         const { error } = await supabase.auth.signUp({ email, password });
         if (error) throw error;
-        toast.success("Verifique seu e-mail para confirmar a conta.");
+        toast.success(
+          "Conta criada! Um Super Admin precisa aprovar seu acesso antes de você entrar no painel.",
+        );
       } else {
         const { error } = await supabase.auth.signInWithPassword({ email, password });
         if (error) throw error;

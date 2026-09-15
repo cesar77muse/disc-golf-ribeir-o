@@ -13,16 +13,19 @@ import { Route as IndexRouteImport } from './routes/index'
 import { Route as AuthenticatedRouteRouteImport } from './routes/_authenticated/route'
 import { Route as AprendaRouteImport } from './routes/aprenda'
 import { Route as AuthRouteImport } from './routes/auth'
+import { Route as PagamentoRouteImport } from './routes/pagamento'
 import { Route as SobreRouteImport } from './routes/sobre'
 import { Route as TorneiosRouteImport } from './routes/torneios'
 import { Route as TreinosRouteImport } from './routes/treinos'
 import { Route as AuthenticatedAdminRouteRouteImport } from './routes/_authenticated/admin/route'
 import { Route as TorneiosSlugRouteImport } from './routes/torneios_.$slug'
 import { Route as AuthenticatedAdminIndexRouteImport } from './routes/_authenticated/admin/index'
+import { Route as AuthenticatedAdminAprovacoesRouteImport } from './routes/_authenticated/admin/aprovacoes'
 import { Route as AuthenticatedAdminFinanceiroRouteImport } from './routes/_authenticated/admin/financeiro'
 import { Route as AuthenticatedAdminInscricoesRouteImport } from './routes/_authenticated/admin/inscricoes'
 import { Route as AuthenticatedAdminTorneiosRouteImport } from './routes/_authenticated/admin/torneios'
 import { Route as AuthenticatedAdminTreinosRouteImport } from './routes/_authenticated/admin/treinos'
+import { Route as ApiMercadopagoWebhookRouteImport } from './routes/api/mercadopago/webhook'
 
 const IndexRoute = IndexRouteImport.update({
   id: '/',
@@ -41,6 +44,11 @@ const AprendaRoute = AprendaRouteImport.update({
 const AuthRoute = AuthRouteImport.update({
   id: '/auth',
   path: '/auth',
+  getParentRoute: () => rootRouteImport,
+} as any)
+const PagamentoRoute = PagamentoRouteImport.update({
+  id: '/pagamento',
+  path: '/pagamento',
   getParentRoute: () => rootRouteImport,
 } as any)
 const SobreRoute = SobreRouteImport.update({
@@ -73,6 +81,12 @@ const AuthenticatedAdminIndexRoute = AuthenticatedAdminIndexRouteImport.update({
   path: '/',
   getParentRoute: () => AuthenticatedAdminRouteRoute,
 } as any)
+const AuthenticatedAdminAprovacoesRoute =
+  AuthenticatedAdminAprovacoesRouteImport.update({
+    id: '/aprovacoes',
+    path: '/aprovacoes',
+    getParentRoute: () => AuthenticatedAdminRouteRoute,
+  } as any)
 const AuthenticatedAdminFinanceiroRoute =
   AuthenticatedAdminFinanceiroRouteImport.update({
     id: '/financeiro',
@@ -97,34 +111,45 @@ const AuthenticatedAdminTreinosRoute =
     path: '/treinos',
     getParentRoute: () => AuthenticatedAdminRouteRoute,
   } as any)
+const ApiMercadopagoWebhookRoute = ApiMercadopagoWebhookRouteImport.update({
+  id: '/api/mercadopago/webhook',
+  path: '/api/mercadopago/webhook',
+  getParentRoute: () => rootRouteImport,
+} as any)
 
 export interface FileRoutesByFullPath {
   '/': typeof IndexRoute
   '/aprenda': typeof AprendaRoute
   '/auth': typeof AuthRoute
+  '/pagamento': typeof PagamentoRoute
   '/sobre': typeof SobreRoute
   '/torneios': typeof TorneiosRoute
   '/treinos': typeof TreinosRoute
   '/admin': typeof AuthenticatedAdminRouteRouteWithChildren
   '/torneios/$slug': typeof TorneiosSlugRoute
+  '/admin/aprovacoes': typeof AuthenticatedAdminAprovacoesRoute
   '/admin/financeiro': typeof AuthenticatedAdminFinanceiroRoute
   '/admin/inscricoes': typeof AuthenticatedAdminInscricoesRoute
   '/admin/torneios': typeof AuthenticatedAdminTorneiosRoute
   '/admin/treinos': typeof AuthenticatedAdminTreinosRoute
+  '/api/mercadopago/webhook': typeof ApiMercadopagoWebhookRoute
   '/admin/': typeof AuthenticatedAdminIndexRoute
 }
 export interface FileRoutesByTo {
   '/': typeof IndexRoute
   '/aprenda': typeof AprendaRoute
   '/auth': typeof AuthRoute
+  '/pagamento': typeof PagamentoRoute
   '/sobre': typeof SobreRoute
   '/torneios': typeof TorneiosRoute
   '/treinos': typeof TreinosRoute
   '/torneios/$slug': typeof TorneiosSlugRoute
+  '/admin/aprovacoes': typeof AuthenticatedAdminAprovacoesRoute
   '/admin/financeiro': typeof AuthenticatedAdminFinanceiroRoute
   '/admin/inscricoes': typeof AuthenticatedAdminInscricoesRoute
   '/admin/torneios': typeof AuthenticatedAdminTorneiosRoute
   '/admin/treinos': typeof AuthenticatedAdminTreinosRoute
+  '/api/mercadopago/webhook': typeof ApiMercadopagoWebhookRoute
   '/admin': typeof AuthenticatedAdminIndexRoute
 }
 export interface FileRoutesById {
@@ -133,15 +158,18 @@ export interface FileRoutesById {
   '/_authenticated': typeof AuthenticatedRouteRouteWithChildren
   '/aprenda': typeof AprendaRoute
   '/auth': typeof AuthRoute
+  '/pagamento': typeof PagamentoRoute
   '/sobre': typeof SobreRoute
   '/torneios': typeof TorneiosRoute
   '/treinos': typeof TreinosRoute
   '/_authenticated/admin': typeof AuthenticatedAdminRouteRouteWithChildren
   '/torneios_/$slug': typeof TorneiosSlugRoute
+  '/_authenticated/admin/aprovacoes': typeof AuthenticatedAdminAprovacoesRoute
   '/_authenticated/admin/financeiro': typeof AuthenticatedAdminFinanceiroRoute
   '/_authenticated/admin/inscricoes': typeof AuthenticatedAdminInscricoesRoute
   '/_authenticated/admin/torneios': typeof AuthenticatedAdminTorneiosRoute
   '/_authenticated/admin/treinos': typeof AuthenticatedAdminTreinosRoute
+  '/api/mercadopago/webhook': typeof ApiMercadopagoWebhookRoute
   '/_authenticated/admin/': typeof AuthenticatedAdminIndexRoute
 }
 export interface FileRouteTypes {
@@ -150,29 +178,35 @@ export interface FileRouteTypes {
     | '/'
     | '/aprenda'
     | '/auth'
+    | '/pagamento'
     | '/sobre'
     | '/torneios'
     | '/treinos'
     | '/admin'
     | '/torneios/$slug'
+    | '/admin/aprovacoes'
     | '/admin/financeiro'
     | '/admin/inscricoes'
     | '/admin/torneios'
     | '/admin/treinos'
+    | '/api/mercadopago/webhook'
     | '/admin/'
   fileRoutesByTo: FileRoutesByTo
   to:
     | '/'
     | '/aprenda'
     | '/auth'
+    | '/pagamento'
     | '/sobre'
     | '/torneios'
     | '/treinos'
     | '/torneios/$slug'
+    | '/admin/aprovacoes'
     | '/admin/financeiro'
     | '/admin/inscricoes'
     | '/admin/torneios'
     | '/admin/treinos'
+    | '/api/mercadopago/webhook'
     | '/admin'
   id:
     | '__root__'
@@ -180,15 +214,18 @@ export interface FileRouteTypes {
     | '/_authenticated'
     | '/aprenda'
     | '/auth'
+    | '/pagamento'
     | '/sobre'
     | '/torneios'
     | '/treinos'
     | '/_authenticated/admin'
     | '/torneios_/$slug'
+    | '/_authenticated/admin/aprovacoes'
     | '/_authenticated/admin/financeiro'
     | '/_authenticated/admin/inscricoes'
     | '/_authenticated/admin/torneios'
     | '/_authenticated/admin/treinos'
+    | '/api/mercadopago/webhook'
     | '/_authenticated/admin/'
   fileRoutesById: FileRoutesById
 }
@@ -197,10 +234,12 @@ export interface RootRouteChildren {
   AuthenticatedRouteRoute: typeof AuthenticatedRouteRouteWithChildren
   AprendaRoute: typeof AprendaRoute
   AuthRoute: typeof AuthRoute
+  PagamentoRoute: typeof PagamentoRoute
   SobreRoute: typeof SobreRoute
   TorneiosRoute: typeof TorneiosRoute
   TreinosRoute: typeof TreinosRoute
   TorneiosSlugRoute: typeof TorneiosSlugRoute
+  ApiMercadopagoWebhookRoute: typeof ApiMercadopagoWebhookRoute
 }
 
 declare module '@tanstack/react-router' {
@@ -231,6 +270,13 @@ declare module '@tanstack/react-router' {
       path: '/auth'
       fullPath: '/auth'
       preLoaderRoute: typeof AuthRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/pagamento': {
+      id: '/pagamento'
+      path: '/pagamento'
+      fullPath: '/pagamento'
+      preLoaderRoute: typeof PagamentoRouteImport
       parentRoute: typeof rootRouteImport
     }
     '/sobre': {
@@ -275,6 +321,13 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof AuthenticatedAdminIndexRouteImport
       parentRoute: typeof AuthenticatedAdminRouteRoute
     }
+    '/_authenticated/admin/aprovacoes': {
+      id: '/_authenticated/admin/aprovacoes'
+      path: '/aprovacoes'
+      fullPath: '/admin/aprovacoes'
+      preLoaderRoute: typeof AuthenticatedAdminAprovacoesRouteImport
+      parentRoute: typeof AuthenticatedAdminRouteRoute
+    }
     '/_authenticated/admin/financeiro': {
       id: '/_authenticated/admin/financeiro'
       path: '/financeiro'
@@ -303,10 +356,18 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof AuthenticatedAdminTreinosRouteImport
       parentRoute: typeof AuthenticatedAdminRouteRoute
     }
+    '/api/mercadopago/webhook': {
+      id: '/api/mercadopago/webhook'
+      path: '/api/mercadopago/webhook'
+      fullPath: '/api/mercadopago/webhook'
+      preLoaderRoute: typeof ApiMercadopagoWebhookRouteImport
+      parentRoute: typeof rootRouteImport
+    }
   }
 }
 
 interface AuthenticatedAdminRouteRouteChildren {
+  AuthenticatedAdminAprovacoesRoute: typeof AuthenticatedAdminAprovacoesRoute
   AuthenticatedAdminFinanceiroRoute: typeof AuthenticatedAdminFinanceiroRoute
   AuthenticatedAdminInscricoesRoute: typeof AuthenticatedAdminInscricoesRoute
   AuthenticatedAdminTorneiosRoute: typeof AuthenticatedAdminTorneiosRoute
@@ -316,6 +377,7 @@ interface AuthenticatedAdminRouteRouteChildren {
 
 const AuthenticatedAdminRouteRouteChildren: AuthenticatedAdminRouteRouteChildren =
   {
+    AuthenticatedAdminAprovacoesRoute: AuthenticatedAdminAprovacoesRoute,
     AuthenticatedAdminFinanceiroRoute: AuthenticatedAdminFinanceiroRoute,
     AuthenticatedAdminInscricoesRoute: AuthenticatedAdminInscricoesRoute,
     AuthenticatedAdminTorneiosRoute: AuthenticatedAdminTorneiosRoute,
@@ -344,10 +406,12 @@ const rootRouteChildren: RootRouteChildren = {
   AuthenticatedRouteRoute: AuthenticatedRouteRouteWithChildren,
   AprendaRoute: AprendaRoute,
   AuthRoute: AuthRoute,
+  PagamentoRoute: PagamentoRoute,
   SobreRoute: SobreRoute,
   TorneiosRoute: TorneiosRoute,
   TreinosRoute: TreinosRoute,
   TorneiosSlugRoute: TorneiosSlugRoute,
+  ApiMercadopagoWebhookRoute: ApiMercadopagoWebhookRoute,
 }
 export const routeTree = rootRouteImport
   ._addFileChildren(rootRouteChildren)

@@ -3,17 +3,24 @@
 // card and detail components did not have to change when the data moved out
 // of src/lib/site-data.ts.
 import { supabase } from "@/integrations/supabase/client";
-import type { PastTournament, Tournament, TournamentDivision } from "@/lib/site-data";
+import {
+  BUNDLED_PARTNER_LOGOS,
+  type PastTournament,
+  type Partner,
+  type Tournament,
+  type TournamentDivision,
+} from "@/lib/site-data";
+import { fetchPartners, type PartnerRecord } from "@/lib/partners";
 
 const TOURNAMENT_FIELDS = `
-  slug, title, date, end_date, registration_deadline, registration_deadline_confirmed,
+  id, slug, title, date, end_date, registration_deadline, registration_deadline_confirmed,
   location, description, image_url, status, prices_approximate, pdga_link,
-  archived_at, photos,
+  archived_at, photos, sponsor_partner_ids, created_by, approval_status,
   tournament_divisions ( name, spots, sort_order, division_prices ( label, price, sort_order ) )
 `;
 
 const PAST_TOURNAMENT_FIELDS = `
-  slug, title, date, end_date, location, image_url, divisions, photos
+  slug, title, date, end_date, location, image_url, divisions, photos, sponsor_partner_ids
 `;
 
 type DivisionPriceRow = { label: string; price: number; sort_order: number };
@@ -26,6 +33,7 @@ type DivisionRow = {
 };
 
 type TournamentRow = {
+  id: string;
   slug: string;
   title: string;
   date: string;
@@ -40,6 +48,9 @@ type TournamentRow = {
   pdga_link: string | null;
   archived_at: string | null;
   photos: string[];
+  sponsor_partner_ids: string[] | null;
+  created_by: string | null;
+  approval_status: string;
   tournament_divisions: DivisionRow[];
 };
 
@@ -52,6 +63,7 @@ type PastTournamentRow = {
   image_url: string | null;
   divisions: string[];
   photos: string[];
+  sponsor_partner_ids: string[] | null;
 };
 
 const STATUSES: readonly string[] = ["open", "closed", "waitlist"];
@@ -59,6 +71,14 @@ const STATUSES: readonly string[] = ["open", "closed", "waitlist"];
 /** The column is a plain text check constraint, so narrow it before it reaches the UI. */
 function toStatus(value: string): Tournament["status"] {
   return STATUSES.includes(value) ? (value as Tournament["status"]) : "closed";
+}
+
+const APPROVAL_STATUSES: readonly string[] = ["pending", "approved", "rejected"];
+
+function toApprovalStatus(value: string): NonNullable<Tournament["approvalStatus"]> {
+  return APPROVAL_STATUSES.includes(value)
+    ? (value as NonNullable<Tournament["approvalStatus"]>)
+    : "pending";
 }
 
 const bySortOrder = (a: { sort_order: number }, b: { sort_order: number }) =>
@@ -77,10 +97,30 @@ function toDivision(row: DivisionRow): TournamentDivision {
   };
 }
 
+/** Explicit selection wins; otherwise fall back to whichever partners are flagged as default sponsors. */
+function resolveSponsors(
+  sponsorPartnerIds: string[] | null,
+  allPartners: PartnerRecord[],
+): Partner[] {
+  const chosen =
+    sponsorPartnerIds && sponsorPartnerIds.length > 0
+      ? allPartners.filter((p) => sponsorPartnerIds.includes(p.id))
+      : allPartners.filter((p) => p.isDefaultSponsor);
+  return [...chosen]
+    .sort((a, b) => a.sortOrder - b.sortOrder)
+    .map((p) => ({
+      name: p.name,
+      fullName: p.fullName,
+      logo: p.logoUrl ?? BUNDLED_PARTNER_LOGOS[p.slug] ?? "",
+    }));
+}
+
 // Optional keys are spread in conditionally: tsconfig sets
 // exactOptionalPropertyTypes, so `endDate: undefined` is not assignable.
-function toTournament(row: TournamentRow): Tournament {
+function toTournament(row: TournamentRow, allPartners: PartnerRecord[]): Tournament {
+  const sponsors = resolveSponsors(row.sponsor_partner_ids, allPartners);
   return {
+    id: row.id,
     slug: row.slug,
     title: row.title,
     date: row.date,
@@ -96,12 +136,17 @@ function toTournament(row: TournamentRow): Tournament {
     ...(row.pdga_link ? { pdgaLink: row.pdga_link } : {}),
     ...(row.archived_at ? { archivedAt: row.archived_at } : {}),
     ...(row.photos.length > 0 ? { photos: row.photos } : {}),
-    // `sponsors` is deliberately omitted: partner logos are still bundled
-    // assets, so the components fall back to TOURNAMENT_DEFAULT_SPONSORS.
+    ...(sponsors.length > 0 ? { sponsors } : {}),
+    ...(row.sponsor_partner_ids && row.sponsor_partner_ids.length > 0
+      ? { sponsorPartnerIds: row.sponsor_partner_ids }
+      : {}),
+    approvalStatus: toApprovalStatus(row.approval_status),
+    ...(row.created_by ? { createdBy: row.created_by } : {}),
   };
 }
 
-function toPastTournament(row: PastTournamentRow): PastTournament {
+function toPastTournament(row: PastTournamentRow, allPartners: PartnerRecord[]): PastTournament {
+  const sponsors = resolveSponsors(row.sponsor_partner_ids, allPartners);
   return {
     slug: row.slug,
     title: row.title,
@@ -111,6 +156,7 @@ function toPastTournament(row: PastTournamentRow): PastTournament {
     ...(row.end_date ? { endDate: row.end_date } : {}),
     ...(row.divisions.length > 0 ? { divisions: row.divisions } : {}),
     ...(row.photos.length > 0 ? { photos: row.photos } : {}),
+    ...(sponsors.length > 0 ? { sponsors } : {}),
   };
 }
 
@@ -118,50 +164,92 @@ function fail(what: string, message: string): never {
   throw new Error(`Não foi possível carregar ${what}: ${message}`);
 }
 
+/**
+ * For the public site only. Explicitly restricted to approved tournaments —
+ * without this filter, an Organizador browsing the site while logged in
+ * would also see their own not-yet-approved tournaments here, since RLS lets
+ * an owner read their own rows regardless of status. Admin screens should use
+ * `fetchTournamentsForAdmin` instead.
+ */
 export async function fetchTournaments(): Promise<Tournament[]> {
-  const { data, error } = await supabase
-    .from("tournaments")
-    .select(TOURNAMENT_FIELDS)
-    .order("date", { ascending: true });
+  const [{ data, error }, allPartners] = await Promise.all([
+    supabase
+      .from("tournaments")
+      .select(TOURNAMENT_FIELDS)
+      .eq("approval_status", "approved")
+      .order("date", { ascending: true }),
+    fetchPartners(),
+  ]);
 
   if (error) fail("os torneios", error.message);
-  return (data as unknown as TournamentRow[]).map(toTournament);
+  return (data as unknown as TournamentRow[]).map((row) => toTournament(row, allPartners));
+}
+
+/**
+ * For the admin panel: a Super Admin manages every tournament, an Organizador
+ * only their own (any approval status) — never other organisers' tournaments,
+ * approved or not. RLS would also let an Organizador's query return every
+ * approved tournament site-wide (the public-read policy has no ownership
+ * check), so the `created_by` filter here is what actually narrows it down,
+ * not just RLS.
+ */
+export async function fetchTournamentsForAdmin(
+  profile: { id: string; role: "super_admin" | "organizador" } | null,
+): Promise<Tournament[]> {
+  if (!profile) return [];
+
+  let query = supabase.from("tournaments").select(TOURNAMENT_FIELDS).order("date", {
+    ascending: true,
+  });
+  if (profile.role !== "super_admin") {
+    query = query.eq("created_by", profile.id);
+  }
+
+  const [{ data, error }, allPartners] = await Promise.all([query, fetchPartners()]);
+  if (error) fail("os torneios", error.message);
+  return (data as unknown as TournamentRow[]).map((row) => toTournament(row, allPartners));
 }
 
 export async function fetchTournamentBySlug(slug: string): Promise<Tournament | null> {
-  const { data, error } = await supabase
-    .from("tournaments")
-    .select(TOURNAMENT_FIELDS)
-    .eq("slug", slug)
-    .maybeSingle();
+  const [{ data, error }, allPartners] = await Promise.all([
+    supabase.from("tournaments").select(TOURNAMENT_FIELDS).eq("slug", slug).maybeSingle(),
+    fetchPartners(),
+  ]);
 
   if (error) fail("o torneio", error.message);
-  return data ? toTournament(data as unknown as TournamentRow) : null;
+  return data ? toTournament(data as unknown as TournamentRow, allPartners) : null;
 }
 
 /** The next tournament on or after today — used by the home page hero. */
 export async function fetchNextTournament(): Promise<Tournament | null> {
   const today = new Date().toISOString().slice(0, 10);
-  const { data, error } = await supabase
-    .from("tournaments")
-    .select(TOURNAMENT_FIELDS)
-    .gte("date", today)
-    .order("date", { ascending: true })
-    .limit(1)
-    .maybeSingle();
+  const [{ data, error }, allPartners] = await Promise.all([
+    supabase
+      .from("tournaments")
+      .select(TOURNAMENT_FIELDS)
+      .eq("approval_status", "approved")
+      .gte("date", today)
+      .order("date", { ascending: true })
+      .limit(1)
+      .maybeSingle(),
+    fetchPartners(),
+  ]);
 
   if (error) fail("o próximo torneio", error.message);
-  return data ? toTournament(data as unknown as TournamentRow) : null;
+  return data ? toTournament(data as unknown as TournamentRow, allPartners) : null;
 }
 
 export async function fetchPastTournaments(): Promise<PastTournament[]> {
-  const { data, error } = await supabase
-    .from("past_tournaments")
-    .select(PAST_TOURNAMENT_FIELDS)
-    .order("date", { ascending: false });
+  const [{ data, error }, allPartners] = await Promise.all([
+    supabase
+      .from("past_tournaments")
+      .select(PAST_TOURNAMENT_FIELDS)
+      .order("date", { ascending: false }),
+    fetchPartners(),
+  ]);
 
   if (error) fail("os torneios realizados", error.message);
-  return (data as unknown as PastTournamentRow[]).map(toPastTournament);
+  return (data as unknown as PastTournamentRow[]).map((row) => toPastTournament(row, allPartners));
 }
 
 // ---------------------------------------------------------------------------
@@ -181,6 +269,7 @@ export type TournamentGeneralInput = {
   status: Tournament["status"];
   pricesApproximate?: boolean;
   pdgaLink?: string;
+  sponsorPartnerIds?: string[];
 };
 
 function toTournamentRow(input: TournamentGeneralInput) {
@@ -196,10 +285,11 @@ function toTournamentRow(input: TournamentGeneralInput) {
     status: input.status,
     prices_approximate: input.pricesApproximate ?? false,
     pdga_link: input.pdgaLink ?? null,
+    sponsor_partner_ids: input.sponsorPartnerIds ?? null,
   };
 }
 
-/** ascii-fold + kebab-case; the admin form pre-fills this from the title but lets it be edited before creating. */
+/** ascii-fold + kebab-case; used to derive the URL slug from the title when creating a tournament. */
 export function slugifyTournamentTitle(title: string): string {
   return title
     .normalize("NFD")
@@ -246,6 +336,39 @@ export async function setTournamentArchived(slug: string, archived: boolean): Pr
     .update({ archived_at: archived ? new Date().toISOString() : null })
     .eq("slug", slug);
   if (error) fail("o torneio", error.message);
+}
+
+// ---------------------------------------------------------------------------
+// Approval workflow — a tournament an Organizador creates starts out hidden
+// from the public site (approval_status 'pending') until a Super Admin
+// approves it here; a Super Admin's own tournaments are approved on creation.
+// See the `tournaments_set_approval` trigger for the server-side guard.
+// ---------------------------------------------------------------------------
+
+/** Every pending tournament, regardless of who created it — only a Super Admin's RLS lets this return other people's rows. */
+export async function fetchPendingTournaments(): Promise<Tournament[]> {
+  const [{ data, error }, allPartners] = await Promise.all([
+    supabase
+      .from("tournaments")
+      .select(TOURNAMENT_FIELDS)
+      .eq("approval_status", "pending")
+      .order("created_at", { ascending: true }),
+    fetchPartners(),
+  ]);
+
+  if (error) fail("os torneios pendentes", error.message);
+  return (data as unknown as TournamentRow[]).map((row) => toTournament(row, allPartners));
+}
+
+export async function setTournamentApprovalStatus(
+  id: string,
+  status: "approved" | "rejected",
+): Promise<void> {
+  const { error } = await supabase
+    .from("tournaments")
+    .update({ approval_status: status })
+    .eq("id", id);
+  if (error) fail("a aprovação do torneio", error.message);
 }
 
 // ---------------------------------------------------------------------------
@@ -298,4 +421,53 @@ export async function removeTournamentPhoto(slug: string, photoUrl: string): Pro
     await supabase.storage.from("media").remove([photoUrl.slice(markerIndex + marker.length)]);
   }
   return photos;
+}
+
+// ---------------------------------------------------------------------------
+// Divisions & prices — categories are a fixed set (not editable from the
+// admin form yet), only their prices are. New tournaments start from this
+// template so the organiser just has to fill in values.
+// ---------------------------------------------------------------------------
+
+export const DEFAULT_TOURNAMENT_DIVISIONS: { name: string; priceLabels: string[] }[] = [
+  { name: "MA1", priceLabels: ["Kit Disco", "Kit Basico"] },
+  { name: "MA40", priceLabels: ["Kit Disco", "Kit Basico"] },
+  { name: "MA2", priceLabels: ["Kit Disco", "Kit Basico"] },
+  { name: "FA1", priceLabels: ["Kit Disco", "Kit Basico"] },
+];
+
+export type DivisionPricesInput = {
+  name: string;
+  prices: { label: string; price: number }[];
+};
+
+/** Replaces every division/price row for a tournament — simplest way to keep them in sync with the form. */
+export async function saveTournamentDivisions(
+  tournamentId: string,
+  divisions: DivisionPricesInput[],
+): Promise<void> {
+  const { error: deleteError } = await supabase
+    .from("tournament_divisions")
+    .delete()
+    .eq("tournament_id", tournamentId);
+  if (deleteError) fail("as divisões", deleteError.message);
+
+  for (const [index, division] of divisions.entries()) {
+    const { data: divisionRow, error: divisionError } = await supabase
+      .from("tournament_divisions")
+      .insert({ tournament_id: tournamentId, name: division.name, sort_order: index })
+      .select("id")
+      .single();
+    if (divisionError) fail("as divisões", divisionError.message);
+
+    const prices = division.prices.map((p, priceIndex) => ({
+      division_id: divisionRow.id,
+      label: p.label,
+      price: p.price,
+      sort_order: priceIndex,
+    }));
+    if (prices.length === 0) continue;
+    const { error: priceError } = await supabase.from("division_prices").insert(prices);
+    if (priceError) fail("os preços", priceError.message);
+  }
 }

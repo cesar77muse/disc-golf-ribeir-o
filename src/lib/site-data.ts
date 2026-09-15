@@ -62,6 +62,19 @@ export const TOURNAMENT_DEFAULT_SPONSORS: Partner[] = [
   ...PARTNERS,
 ];
 
+/**
+ * Assets bundleados dos 5 parceiros padrão, indexados pelo `slug` deles na
+ * tabela `partners`. Usado como fallback de exibição e para popular
+ * `logo_url` no Storage na primeira vez que o painel abre o seletor.
+ */
+export const BUNDLED_PARTNER_LOGOS: Record<string, string> = {
+  "a-turma-do-disc-golf": ownLogo,
+  usp: uspLogo,
+  ajed: ajedLogo,
+  "disc-golf-brasil": discGolfBrasilLogo,
+  pdga: pdgaLogo,
+};
+
 export const WHAT_IS_DISC_GOLF = [
   {
     title: "O objetivo",
@@ -103,6 +116,8 @@ export type Training = {
   status: "active" | "suspended";
   /** false enquanto dia/horário/local ainda não foram confirmados */
   confirmed: boolean;
+  /** false esconde o treino do site público sem apagá-lo do painel */
+  visible: boolean;
 };
 
 export const USP_COURSE = {
@@ -127,6 +142,7 @@ export type TournamentDivision = {
 };
 
 export type Tournament = {
+  id: string;
   slug: string;
   title: string;
   date: string;
@@ -145,10 +161,16 @@ export type Tournament = {
   pdgaLink?: string;
   /** logos de apoio exibidos na página do torneio; se omitido, usa TOURNAMENT_DEFAULT_SPONSORS */
   sponsors?: Partner[];
+  /** ids brutos de `partners` selecionados para este torneio; usado só pelo formulário admin */
+  sponsorPartnerIds?: string[];
   /** presente quando o organizador arquiva o torneio manualmente antes da data */
   archivedAt?: string;
   /** galeria de fotos, adicionada pelo painel depois que o torneio termina */
   photos?: string[];
+  /** ausente para torneios criados antes da aprovação por papéis existir (tratados como aprovados) */
+  approvalStatus?: "pending" | "approved" | "rejected";
+  /** id do usuário que criou o torneio; usado só pelo painel para saber quem revisar */
+  createdBy?: string;
 };
 
 export type PastTournament = {

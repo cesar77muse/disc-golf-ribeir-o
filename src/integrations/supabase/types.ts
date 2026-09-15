@@ -85,6 +85,33 @@ export type Database = {
         }
         Relationships: []
       }
+      profiles: {
+        Row: {
+          id: string
+          email: string
+          role: string
+          status: string
+          created_at: string
+          updated_at: string
+        }
+        Insert: {
+          id: string
+          email: string
+          role?: string
+          status?: string
+          created_at?: string
+          updated_at?: string
+        }
+        Update: {
+          id?: string
+          email?: string
+          role?: string
+          status?: string
+          created_at?: string
+          updated_at?: string
+        }
+        Relationships: []
+      }
       past_tournaments: {
         Row: {
           id: string
@@ -146,6 +173,13 @@ export type Database = {
           birth_date: string
           pdga_number: string
           status: string
+          payment_status: string
+          mp_preference_id: string | null
+          mp_payment_id: string | null
+          mp_status_detail: string | null
+          payment_method: string | null
+          amount_paid: number | null
+          paid_at: string | null
           notes: string | null
           created_at: string
           updated_at: string
@@ -165,6 +199,13 @@ export type Database = {
           birth_date: string
           pdga_number: string
           status?: string
+          payment_status?: string
+          mp_preference_id?: string | null
+          mp_payment_id?: string | null
+          mp_status_detail?: string | null
+          payment_method?: string | null
+          amount_paid?: number | null
+          paid_at?: string | null
           notes?: string | null
           created_at?: string
           updated_at?: string
@@ -184,6 +225,13 @@ export type Database = {
           birth_date?: string
           pdga_number?: string
           status?: string
+          payment_status?: string
+          mp_preference_id?: string | null
+          mp_payment_id?: string | null
+          mp_status_detail?: string | null
+          payment_method?: string | null
+          amount_paid?: number | null
+          paid_at?: string | null
           notes?: string | null
           created_at?: string
           updated_at?: string
@@ -258,6 +306,8 @@ export type Database = {
           sponsor_partner_ids: string[] | null
           archived_at: string | null
           photos: string[]
+          created_by: string | null
+          approval_status: string
           created_at: string
           updated_at: string
         }
@@ -278,6 +328,8 @@ export type Database = {
           sponsor_partner_ids?: string[] | null
           archived_at?: string | null
           photos?: string[]
+          created_by?: string | null
+          approval_status?: string
           created_at?: string
           updated_at?: string
         }
@@ -298,6 +350,8 @@ export type Database = {
           sponsor_partner_ids?: string[] | null
           archived_at?: string | null
           photos?: string[]
+          created_by?: string | null
+          approval_status?: string
           created_at?: string
           updated_at?: string
         }
@@ -315,6 +369,7 @@ export type Database = {
           description: string
           status: string
           confirmed: boolean
+          visible: boolean
           image_url: string | null
           created_at: string
           updated_at: string
@@ -330,6 +385,7 @@ export type Database = {
           description: string
           status?: string
           confirmed?: boolean
+          visible?: boolean
           image_url?: string | null
           created_at?: string
           updated_at?: string
@@ -345,6 +401,7 @@ export type Database = {
           description?: string
           status?: string
           confirmed?: boolean
+          visible?: boolean
           image_url?: string | null
           created_at?: string
           updated_at?: string

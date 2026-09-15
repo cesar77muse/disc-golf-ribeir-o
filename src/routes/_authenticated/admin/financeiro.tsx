@@ -19,15 +19,15 @@ import {
   TableRow,
 } from "@/components/ui/table";
 import { parseLocalDate } from "@/lib/site-data";
-import { fetchTournaments } from "@/lib/tournaments";
+import { fetchTournamentsForAdmin } from "@/lib/tournaments";
 import { fetchRegistrations } from "@/lib/registrations";
 
 export const Route = createFileRoute("/_authenticated/admin/financeiro")({
   head: () => ({
     meta: [{ title: "Financeiro — Painel Administrativo" }],
   }),
-  loader: async () => ({
-    tournaments: await fetchTournaments(),
+  loader: async ({ context }) => ({
+    tournaments: await fetchTournamentsForAdmin(context.profile),
     registrations: await fetchRegistrations(),
   }),
   component: AdminFinanceiro,
@@ -59,13 +59,23 @@ function AdminFinanceiro() {
 
   const rows = periodTournaments.map((t) => {
     const tournamentRegistrations = registrations.filter((r) => r.tournamentSlug === t.slug);
-    const confirmed = tournamentRegistrations
-      .filter((r) => r.status === "confirmed")
-      .reduce((acc, r) => acc + r.price, 0);
+    // Received money only: what Mercado Pago actually captured. amountPaid can
+    // differ from the listed price (a partial refund), so it wins when set.
+    const received = tournamentRegistrations
+      .filter((r) => r.paymentStatus === "approved")
+      .reduce((acc, r) => acc + (r.amountPaid ?? r.price), 0);
+    // Still payable: a checkout that was started but never approved. Rejected
+    // attempts stay here because the player can still come back and pay.
     const pending = tournamentRegistrations
-      .filter((r) => r.status === "pending" || r.status === "waitlist")
+      .filter(
+        (r) =>
+          r.status !== "cancelled" &&
+          (r.paymentStatus === "pending" ||
+            r.paymentStatus === "in_process" ||
+            r.paymentStatus === "rejected"),
+      )
       .reduce((acc, r) => acc + r.price, 0);
-    return { slug: t.slug, title: t.title, confirmed, pending };
+    return { slug: t.slug, title: t.title, confirmed: received, pending };
   });
 
   const totals = rows.reduce(
@@ -81,7 +91,7 @@ function AdminFinanceiro() {
       <div className="mb-8">
         <h1 className="text-3xl font-bold">Financeiro</h1>
         <p className="text-muted-foreground">
-          Receita por torneio, com base nas inscrições registradas.
+          Receita por torneio, com base nos pagamentos confirmados pelo Mercado Pago.
         </p>
       </div>
 
@@ -107,13 +117,13 @@ function AdminFinanceiro() {
       <div className="mb-6 grid gap-4 sm:grid-cols-2">
         <Card className="border-border bg-card">
           <CardContent className="p-5">
-            <p className="text-sm text-muted-foreground">Confirmada</p>
+            <p className="text-sm text-muted-foreground">Recebida</p>
             <p className="text-2xl font-bold text-acid">R$ {totals.confirmed}</p>
           </CardContent>
         </Card>
         <Card className="border-border bg-card">
           <CardContent className="p-5">
-            <p className="text-sm text-muted-foreground">Pendente / lista de espera</p>
+            <p className="text-sm text-muted-foreground">Aguardando pagamento</p>
             <p className="text-2xl font-bold">R$ {totals.pending}</p>
           </CardContent>
         </Card>
@@ -132,7 +142,7 @@ function AdminFinanceiro() {
               <TableHeader>
                 <TableRow>
                   <TableHead>Torneio</TableHead>
-                  <TableHead>Confirmada</TableHead>
+                  <TableHead>Recebida</TableHead>
                   <TableHead>Pendente</TableHead>
                 </TableRow>
               </TableHeader>

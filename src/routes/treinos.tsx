@@ -3,7 +3,7 @@ import { CalendarDays, Clock, MapPin, Users, CheckCircle2, ExternalLink } from "
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import { SITE, PARTNERS, USP_COURSE } from "@/lib/site-data";
-import { fetchTrainings } from "@/lib/trainings";
+import { fetchVisibleTrainings } from "@/lib/trainings";
 import treinosImage from "@/assets/TreinosDG.png";
 import uspMapImage from "@/assets/usp-course-map.png";
 import udiscLogo from "@/assets/logoUDisc-white.png";
@@ -24,7 +24,7 @@ export const Route = createFileRoute("/treinos")({
       { name: "twitter:image", content: treinosImage },
     ],
   }),
-  loader: async () => ({ trainings: await fetchTrainings() }),
+  loader: async () => ({ trainings: await fetchVisibleTrainings() }),
   component: TrainingsPage,
 });
 

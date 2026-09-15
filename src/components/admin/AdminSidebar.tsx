@@ -1,5 +1,14 @@
 import { Link, useRouterState } from "@tanstack/react-router";
-import { LayoutDashboard, Dumbbell, Trophy, ClipboardList, DollarSign, Disc } from "lucide-react";
+import {
+  LayoutDashboard,
+  Dumbbell,
+  Trophy,
+  ClipboardList,
+  DollarSign,
+  Disc,
+  ShieldCheck,
+} from "lucide-react";
+import type { UserRole } from "@/lib/profiles";
 import {
   Sidebar,
   SidebarContent,
@@ -17,16 +26,39 @@ import {
 // a sidebar é #0b0c10.
 import logo from "@/assets/logo-vertical.png";
 
+// Organizador só tem acesso ao que o pedido de roles listou: Dashboard,
+// Torneios, Inscrições e Financeiro. Treinos e Aprovações ficam exclusivos do
+// Super Admin (a rota de Treinos também é bloqueada no beforeLoad).
 const NAV_ITEMS = [
-  { to: "/admin", label: "Dashboard", icon: LayoutDashboard, exact: true },
-  { to: "/admin/treinos", label: "Treinos", icon: Dumbbell, exact: false },
-  { to: "/admin/torneios", label: "Torneios", icon: Trophy, exact: false },
-  { to: "/admin/inscricoes", label: "Inscrições", icon: ClipboardList, exact: false },
-  { to: "/admin/financeiro", label: "Financeiro", icon: DollarSign, exact: false },
+  { to: "/admin", label: "Dashboard", icon: LayoutDashboard, exact: true, superAdminOnly: false },
+  { to: "/admin/torneios", label: "Torneios", icon: Trophy, exact: false, superAdminOnly: false },
+  {
+    to: "/admin/inscricoes",
+    label: "Inscrições",
+    icon: ClipboardList,
+    exact: false,
+    superAdminOnly: false,
+  },
+  {
+    to: "/admin/financeiro",
+    label: "Financeiro",
+    icon: DollarSign,
+    exact: false,
+    superAdminOnly: false,
+  },
+  { to: "/admin/treinos", label: "Treinos", icon: Dumbbell, exact: false, superAdminOnly: true },
+  {
+    to: "/admin/aprovacoes",
+    label: "Aprovações",
+    icon: ShieldCheck,
+    exact: false,
+    superAdminOnly: true,
+  },
 ] as const;
 
-export function AdminSidebar() {
+export function AdminSidebar({ role }: { role: UserRole }) {
   const pathname = useRouterState({ select: (s) => s.location.pathname });
+  const navItems = NAV_ITEMS.filter((item) => !item.superAdminOnly || role === "super_admin");
 
   return (
     <Sidebar collapsible="icon">
@@ -54,7 +86,7 @@ export function AdminSidebar() {
           <SidebarGroupLabel>Painel</SidebarGroupLabel>
           <SidebarGroupContent>
             <SidebarMenu className="gap-1">
-              {NAV_ITEMS.map((item) => {
+              {navItems.map((item) => {
                 const isActive = item.exact ? pathname === item.to : pathname.startsWith(item.to);
                 return (
                   <SidebarMenuItem key={item.to}>

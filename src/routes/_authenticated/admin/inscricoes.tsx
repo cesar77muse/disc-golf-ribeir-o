@@ -17,7 +17,11 @@ import {
   TableHeader,
   TableRow,
 } from "@/components/ui/table";
-import { fetchRegistrations, type RegistrationStatus } from "@/lib/registrations";
+import {
+  fetchRegistrations,
+  type PaymentStatus,
+  type RegistrationStatus,
+} from "@/lib/registrations";
 
 const STATUS_LABEL: Record<RegistrationStatus, string> = {
   pending: "Pendente",
@@ -31,6 +35,26 @@ const STATUS_BADGE_CLASS: Record<RegistrationStatus, string> = {
   confirmed: "bg-acid text-background",
   cancelled: "bg-destructive/10 text-destructive",
   waitlist: "bg-buzz/20 text-buzz",
+};
+
+const PAYMENT_LABEL: Record<PaymentStatus, string> = {
+  pending: "Aguardando",
+  in_process: "Em análise",
+  approved: "Pago",
+  rejected: "Recusado",
+  cancelled: "Cancelado",
+  refunded: "Estornado",
+  charged_back: "Contestado",
+};
+
+const PAYMENT_BADGE_CLASS: Record<PaymentStatus, string> = {
+  pending: "bg-muted text-muted-foreground",
+  in_process: "bg-buzz/20 text-buzz",
+  approved: "bg-acid text-background",
+  rejected: "bg-destructive/10 text-destructive",
+  cancelled: "bg-destructive/10 text-destructive",
+  refunded: "bg-destructive/10 text-destructive",
+  charged_back: "bg-destructive/10 text-destructive",
 };
 
 type Search = { torneio?: string };
@@ -131,6 +155,7 @@ function AdminInscricoes() {
                   <TableHead>Divisão</TableHead>
                   <TableHead>Contato</TableHead>
                   <TableHead>Status</TableHead>
+                  <TableHead>Pagamento</TableHead>
                   <TableHead>Data</TableHead>
                 </TableRow>
               </TableHeader>
@@ -148,6 +173,11 @@ function AdminInscricoes() {
                     <TableCell>
                       <Badge className={STATUS_BADGE_CLASS[r.status]}>
                         {STATUS_LABEL[r.status]}
+                      </Badge>
+                    </TableCell>
+                    <TableCell>
+                      <Badge className={PAYMENT_BADGE_CLASS[r.paymentStatus]}>
+                        {PAYMENT_LABEL[r.paymentStatus]}
                       </Badge>
                     </TableCell>
                     <TableCell className="text-xs text-muted-foreground">
