@@ -85,6 +85,15 @@ function AuthPage() {
                   <Lock className="absolute left-3 top-3 h-4 w-4 text-muted-foreground" />
                   <Input id="password" type="password" value={password} onChange={(e) => setPassword(e.target.value)} className="bg-background pl-9" />
                 </div>
+                {/* Só visual por enquanto: a recuperação de senha ainda não foi implementada. */}
+                <div className="flex justify-end">
+                  <button
+                    type="button"
+                    className="text-sm text-muted-foreground underline-offset-4 transition-colors hover:text-acid hover:underline"
+                  >
+                    Esqueceu sua senha?
+                  </button>
+                </div>
               </div>
               <Button onClick={() => handleEmailLogin("signin")} disabled={loading} className="w-full bg-primary text-primary-foreground hover:bg-primary/90">
                 {loading ? <Loader2 className="mr-2 h-4 w-4 animate-spin" /> : null} Entrar

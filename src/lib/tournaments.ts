@@ -220,7 +220,7 @@ export async function fetchTournamentBySlug(slug: string): Promise<Tournament | 
   return data ? toTournament(data as unknown as TournamentRow, allPartners) : null;
 }
 
-/** The next tournament on or after today — used by the home page hero. */
+/** The next tournament that is not past per `isTournamentPast` — used by the home page. */
 export async function fetchNextTournament(): Promise<Tournament | null> {
   const today = new Date().toISOString().slice(0, 10);
   const [{ data, error }, allPartners] = await Promise.all([
@@ -228,7 +228,8 @@ export async function fetchNextTournament(): Promise<Tournament | null> {
       .from("tournaments")
       .select(TOURNAMENT_FIELDS)
       .eq("approval_status", "approved")
-      .gte("date", today)
+      .is("archived_at", null)
+      .or(`date.gte.${today},end_date.gte.${today}`)
       .order("date", { ascending: true })
       .limit(1)
       .maybeSingle(),

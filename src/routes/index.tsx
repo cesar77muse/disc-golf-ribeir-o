@@ -88,17 +88,27 @@ function HomePage() {
               </CardContent>
             </Card>
           </Link>
-          <Link to="/torneios" className="block">
-            <Card className="h-full border-border bg-card/80 backdrop-blur transition-colors hover:border-buzz">
-              <CardContent className="p-5">
-                <Trophy className="h-6 w-6 text-buzz" />
-                <p className="mt-2 text-sm text-muted-foreground">Próximo torneio</p>
-                <p className="font-semibold">
-                  {nextTournament ? nextTournament.title : "Nenhum torneio agendado no momento."}
-                </p>
-              </CardContent>
-            </Card>
-          </Link>
+          {nextTournament ? (
+            <Link to="/torneios/$slug" params={{ slug: nextTournament.slug }} className="block">
+              <Card className="h-full border-border bg-card/80 backdrop-blur transition-colors hover:border-buzz">
+                <CardContent className="p-5">
+                  <Trophy className="h-6 w-6 text-buzz" />
+                  <p className="mt-2 text-sm text-muted-foreground">Próximo torneio</p>
+                  <p className="font-semibold">{nextTournament.title}</p>
+                </CardContent>
+              </Card>
+            </Link>
+          ) : (
+            <Link to="/torneios" className="block">
+              <Card className="h-full border-border bg-card/80 backdrop-blur transition-colors hover:border-buzz">
+                <CardContent className="p-5">
+                  <Trophy className="h-6 w-6 text-buzz" />
+                  <p className="mt-2 text-sm text-muted-foreground">Próximo torneio</p>
+                  <p className="font-semibold">Nenhum torneio agendado no momento.</p>
+                </CardContent>
+              </Card>
+            </Link>
+          )}
           <Card className="border-border bg-card/80 backdrop-blur">
             <CardContent className="p-5">
               <MapPin className="h-6 w-6 text-acid" />
@@ -165,7 +175,7 @@ function AboutVideo() {
 
     const observer = new IntersectionObserver(
       ([entry]) => {
-        if (entry.isIntersecting) {
+        if (entry?.isIntersecting) {
           video.play().catch(() => {});
         } else {
           video.pause();

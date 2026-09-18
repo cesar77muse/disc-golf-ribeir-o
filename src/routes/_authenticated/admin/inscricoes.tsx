@@ -75,6 +75,10 @@ export const Route = createFileRoute("/_authenticated/admin/inscricoes")({
 
 const ALL = "todos";
 
+function formatBRL(value: number): string {
+  return `R$ ${value.toFixed(2).replace(".", ",")}`;
+}
+
 function AdminInscricoes() {
   const { registrations } = Route.useLoaderData();
   const { torneio } = Route.useSearch();
@@ -156,6 +160,7 @@ function AdminInscricoes() {
                   <TableHead>Contato</TableHead>
                   <TableHead>Status</TableHead>
                   <TableHead>Pagamento</TableHead>
+                  <TableHead className="whitespace-nowrap text-right">Valor pago</TableHead>
                   <TableHead>Data</TableHead>
                 </TableRow>
               </TableHeader>
@@ -179,6 +184,13 @@ function AdminInscricoes() {
                       <Badge className={PAYMENT_BADGE_CLASS[r.paymentStatus]}>
                         {PAYMENT_LABEL[r.paymentStatus]}
                       </Badge>
+                    </TableCell>
+                    <TableCell className="whitespace-nowrap text-right tabular-nums">
+                      {r.amountPaid === null ? (
+                        <span className="text-muted-foreground">—</span>
+                      ) : (
+                        formatBRL(r.amountPaid)
+                      )}
                     </TableCell>
                     <TableCell className="text-xs text-muted-foreground">
                       {new Date(r.createdAt).toLocaleDateString("pt-BR")}
