@@ -38,7 +38,7 @@ export type CreatePreferenceInput = {
   description: string;
   unitPrice: number;
   payer: PreferencePayer;
-  /** Origin of the deployed site, e.g. https://discgolfribeirao.com.br */
+  /** Origin of the deployed site, e.g. https://discgolfrp.vercel.app */
   siteUrl: string;
 };
 
