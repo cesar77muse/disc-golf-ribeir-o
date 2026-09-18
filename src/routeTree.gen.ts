@@ -14,6 +14,7 @@ import { Route as AuthenticatedRouteRouteImport } from './routes/_authenticated/
 import { Route as AprendaRouteImport } from './routes/aprenda'
 import { Route as AuthRouteImport } from './routes/auth'
 import { Route as PagamentoRouteImport } from './routes/pagamento'
+import { Route as RedefinirSenhaRouteImport } from './routes/redefinir-senha'
 import { Route as SobreRouteImport } from './routes/sobre'
 import { Route as TorneiosRouteImport } from './routes/torneios'
 import { Route as TreinosRouteImport } from './routes/treinos'
@@ -49,6 +50,11 @@ const AuthRoute = AuthRouteImport.update({
 const PagamentoRoute = PagamentoRouteImport.update({
   id: '/pagamento',
   path: '/pagamento',
+  getParentRoute: () => rootRouteImport,
+} as any)
+const RedefinirSenhaRoute = RedefinirSenhaRouteImport.update({
+  id: '/redefinir-senha',
+  path: '/redefinir-senha',
   getParentRoute: () => rootRouteImport,
 } as any)
 const SobreRoute = SobreRouteImport.update({
@@ -122,6 +128,7 @@ export interface FileRoutesByFullPath {
   '/aprenda': typeof AprendaRoute
   '/auth': typeof AuthRoute
   '/pagamento': typeof PagamentoRoute
+  '/redefinir-senha': typeof RedefinirSenhaRoute
   '/sobre': typeof SobreRoute
   '/torneios': typeof TorneiosRoute
   '/treinos': typeof TreinosRoute
@@ -140,6 +147,7 @@ export interface FileRoutesByTo {
   '/aprenda': typeof AprendaRoute
   '/auth': typeof AuthRoute
   '/pagamento': typeof PagamentoRoute
+  '/redefinir-senha': typeof RedefinirSenhaRoute
   '/sobre': typeof SobreRoute
   '/torneios': typeof TorneiosRoute
   '/treinos': typeof TreinosRoute
@@ -159,6 +167,7 @@ export interface FileRoutesById {
   '/aprenda': typeof AprendaRoute
   '/auth': typeof AuthRoute
   '/pagamento': typeof PagamentoRoute
+  '/redefinir-senha': typeof RedefinirSenhaRoute
   '/sobre': typeof SobreRoute
   '/torneios': typeof TorneiosRoute
   '/treinos': typeof TreinosRoute
@@ -179,6 +188,7 @@ export interface FileRouteTypes {
     | '/aprenda'
     | '/auth'
     | '/pagamento'
+    | '/redefinir-senha'
     | '/sobre'
     | '/torneios'
     | '/treinos'
@@ -197,6 +207,7 @@ export interface FileRouteTypes {
     | '/aprenda'
     | '/auth'
     | '/pagamento'
+    | '/redefinir-senha'
     | '/sobre'
     | '/torneios'
     | '/treinos'
@@ -215,6 +226,7 @@ export interface FileRouteTypes {
     | '/aprenda'
     | '/auth'
     | '/pagamento'
+    | '/redefinir-senha'
     | '/sobre'
     | '/torneios'
     | '/treinos'
@@ -235,6 +247,7 @@ export interface RootRouteChildren {
   AprendaRoute: typeof AprendaRoute
   AuthRoute: typeof AuthRoute
   PagamentoRoute: typeof PagamentoRoute
+  RedefinirSenhaRoute: typeof RedefinirSenhaRoute
   SobreRoute: typeof SobreRoute
   TorneiosRoute: typeof TorneiosRoute
   TreinosRoute: typeof TreinosRoute
@@ -277,6 +290,13 @@ declare module '@tanstack/react-router' {
       path: '/pagamento'
       fullPath: '/pagamento'
       preLoaderRoute: typeof PagamentoRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/redefinir-senha': {
+      id: '/redefinir-senha'
+      path: '/redefinir-senha'
+      fullPath: '/redefinir-senha'
+      preLoaderRoute: typeof RedefinirSenhaRouteImport
       parentRoute: typeof rootRouteImport
     }
     '/sobre': {
@@ -407,6 +427,7 @@ const rootRouteChildren: RootRouteChildren = {
   AprendaRoute: AprendaRoute,
   AuthRoute: AuthRoute,
   PagamentoRoute: PagamentoRoute,
+  RedefinirSenhaRoute: RedefinirSenhaRoute,
   SobreRoute: SobreRoute,
   TorneiosRoute: TorneiosRoute,
   TreinosRoute: TreinosRoute,

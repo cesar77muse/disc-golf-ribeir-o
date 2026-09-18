@@ -27,6 +27,7 @@ function AuthPage() {
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
   const [loading, setLoading] = useState(false);
+  const [sendingReset, setSendingReset] = useState(false);
 
   useEffect(() => {
     supabase.auth.getUser().then(({ data }) => {
@@ -58,6 +59,30 @@ function AuthPage() {
     }
   };
 
+  const handleForgotPassword = async () => {
+    const target = email.trim();
+    if (!target) {
+      toast.error("Digite seu e-mail no campo acima para recuperar a senha.");
+      return;
+    }
+    setSendingReset(true);
+    try {
+      // The link lands on /redefinir-senha, which must be allowed under
+      // Supabase → Authentication → URL Configuration → Redirect URLs.
+      const { error } = await supabase.auth.resetPasswordForEmail(target, {
+        redirectTo: `${window.location.origin}/redefinir-senha`,
+      });
+      if (error) throw error;
+      // Same message whether or not the account exists, so the form can't be
+      // used to find out which e-mails are registered.
+      toast.success("Se houver uma conta com esse e-mail, enviamos um link para redefinir a senha.");
+    } catch (err) {
+      toast.error(err instanceof Error ? err.message : "Não foi possível enviar o e-mail de recuperação");
+    } finally {
+      setSendingReset(false);
+    }
+  };
+
   return (
     <section className="mx-auto flex max-w-md items-center justify-center px-4 py-20 sm:px-6 lg:px-8">
       <Card className="w-full border-border bg-card">
@@ -85,13 +110,14 @@ function AuthPage() {
                   <Lock className="absolute left-3 top-3 h-4 w-4 text-muted-foreground" />
                   <Input id="password" type="password" value={password} onChange={(e) => setPassword(e.target.value)} className="bg-background pl-9" />
                 </div>
-                {/* Só visual por enquanto: a recuperação de senha ainda não foi implementada. */}
                 <div className="flex justify-end">
                   <button
                     type="button"
-                    className="text-sm text-muted-foreground underline-offset-4 transition-colors hover:text-acid hover:underline"
+                    onClick={handleForgotPassword}
+                    disabled={sendingReset}
+                    className="text-sm text-muted-foreground underline-offset-4 transition-colors hover:text-acid hover:underline disabled:opacity-50"
                   >
-                    Esqueceu sua senha?
+                    {sendingReset ? "Enviando…" : "Esqueceu sua senha?"}
                   </button>
                 </div>
               </div>
