@@ -1,6 +1,7 @@
 import { createFileRoute } from "@tanstack/react-router";
 import { useMemo, useState } from "react";
 import { Badge } from "@/components/ui/badge";
+import { Button } from "@/components/ui/button";
 import { Card, CardContent } from "@/components/ui/card";
 import {
   Select,
@@ -17,45 +18,19 @@ import {
   TableHeader,
   TableRow,
 } from "@/components/ui/table";
+import { RegistrationDetailsDialog } from "@/components/admin/RegistrationDetailsDialog";
+import {
+  PAYMENT_BADGE_CLASS,
+  PAYMENT_LABEL,
+  STATUS_BADGE_CLASS,
+  STATUS_LABEL,
+  formatBRL,
+} from "@/lib/registration-display";
 import {
   fetchRegistrations,
-  type PaymentStatus,
+  type Registration,
   type RegistrationStatus,
 } from "@/lib/registrations";
-
-const STATUS_LABEL: Record<RegistrationStatus, string> = {
-  pending: "Pendente",
-  confirmed: "Confirmada",
-  cancelled: "Cancelada",
-  waitlist: "Lista de espera",
-};
-
-const STATUS_BADGE_CLASS: Record<RegistrationStatus, string> = {
-  pending: "bg-muted text-muted-foreground",
-  confirmed: "bg-acid text-background",
-  cancelled: "bg-destructive/10 text-destructive",
-  waitlist: "bg-buzz/20 text-buzz",
-};
-
-const PAYMENT_LABEL: Record<PaymentStatus, string> = {
-  pending: "Aguardando",
-  in_process: "Em análise",
-  approved: "Pago",
-  rejected: "Recusado",
-  cancelled: "Cancelado",
-  refunded: "Estornado",
-  charged_back: "Contestado",
-};
-
-const PAYMENT_BADGE_CLASS: Record<PaymentStatus, string> = {
-  pending: "bg-muted text-muted-foreground",
-  in_process: "bg-buzz/20 text-buzz",
-  approved: "bg-acid text-background",
-  rejected: "bg-destructive/10 text-destructive",
-  cancelled: "bg-destructive/10 text-destructive",
-  refunded: "bg-destructive/10 text-destructive",
-  charged_back: "bg-destructive/10 text-destructive",
-};
 
 type Search = { torneio?: string };
 
@@ -75,16 +50,13 @@ export const Route = createFileRoute("/_authenticated/admin/inscricoes")({
 
 const ALL = "todos";
 
-function formatBRL(value: number): string {
-  return `R$ ${value.toFixed(2).replace(".", ",")}`;
-}
-
 function AdminInscricoes() {
   const { registrations } = Route.useLoaderData();
   const { torneio } = Route.useSearch();
 
   const [tournamentFilter, setTournamentFilter] = useState(torneio ?? ALL);
   const [statusFilter, setStatusFilter] = useState<RegistrationStatus | typeof ALL>(ALL);
+  const [selected, setSelected] = useState<Registration | null>(null);
 
   const tournamentOptions = useMemo(() => {
     const seen = new Map<string, string>();
@@ -157,11 +129,11 @@ function AdminInscricoes() {
                   <TableHead>Nome</TableHead>
                   <TableHead>Torneio</TableHead>
                   <TableHead>Divisão</TableHead>
-                  <TableHead>Contato</TableHead>
                   <TableHead>Status</TableHead>
                   <TableHead>Pagamento</TableHead>
                   <TableHead className="whitespace-nowrap text-right">Valor pago</TableHead>
                   <TableHead>Data</TableHead>
+                  <TableHead className="text-right">Detalhes</TableHead>
                 </TableRow>
               </TableHeader>
               <TableBody>
@@ -170,11 +142,6 @@ function AdminInscricoes() {
                     <TableCell className="font-medium">{r.fullName}</TableCell>
                     <TableCell>{r.tournamentTitle}</TableCell>
                     <TableCell>{r.divisionName}</TableCell>
-                    <TableCell className="text-xs text-muted-foreground">
-                      {r.email}
-                      <br />
-                      {r.phone}
-                    </TableCell>
                     <TableCell>
                       <Badge className={STATUS_BADGE_CLASS[r.status]}>
                         {STATUS_LABEL[r.status]}
@@ -195,6 +162,16 @@ function AdminInscricoes() {
                     <TableCell className="text-xs text-muted-foreground">
                       {new Date(r.createdAt).toLocaleDateString("pt-BR")}
                     </TableCell>
+                    <TableCell className="text-right">
+                      <Button
+                        variant="outline"
+                        size="sm"
+                        onClick={() => setSelected(r)}
+                        aria-label={`Ver detalhes de ${r.fullName}`}
+                      >
+                        Detalhes
+                      </Button>
+                    </TableCell>
                   </TableRow>
                 ))}
               </TableBody>
@@ -202,6 +179,13 @@ function AdminInscricoes() {
           )}
         </CardContent>
       </Card>
+
+      <RegistrationDetailsDialog
+        registration={selected}
+        onOpenChange={(open) => {
+          if (!open) setSelected(null);
+        }}
+      />
     </section>
   );
 }
