@@ -77,17 +77,28 @@ export const Route = createFileRoute("/api/mercadopago/webhook")({
         }
 
         // The id arrives in the body for the modern format and in the query
-        // string (`data.id`) for the legacy/IPN one.
-        const dataId = String(body.data?.id ?? url.searchParams.get("data.id") ?? "");
-        const kind = body.type ?? body.topic ?? url.searchParams.get("type") ?? "";
+        // string for the legacy/IPN one, which spells it `data.id` on payments
+        // and plain `id` on merchant_order.
+        const dataId = String(
+          body.data?.id ?? url.searchParams.get("data.id") ?? url.searchParams.get("id") ?? "",
+        );
+        const kind =
+          body.type ??
+          body.topic ??
+          url.searchParams.get("type") ??
+          url.searchParams.get("topic") ??
+          "";
+
+        // merchant_order and test pings carry no payment to apply, and Mercado
+        // Pago sends them unsigned — so they have to be acknowledged before the
+        // signature check, or every Checkout Pro sign-up leaves a 401 being
+        // retried for a notification that was never going to do anything.
+        if (kind !== "payment" || !dataId) {
+          return new Response(null, { status: 200 });
+        }
 
         if (!(await isValidSignature(request, dataId))) {
           return new Response("invalid signature", { status: 401 });
-        }
-
-        // merchant_order and test pings carry no payment to apply.
-        if (kind !== "payment" || !dataId) {
-          return new Response(null, { status: 200 });
         }
 
         try {
