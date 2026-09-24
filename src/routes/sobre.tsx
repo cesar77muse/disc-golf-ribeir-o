@@ -321,7 +321,7 @@ function AboutPage() {
                 {activeBio + 1} / {OSCAR_BIO.length}
               </p>
               <div className="mt-4">
-                <BioBlock index={activeBio} {...OSCAR_BIO[activeBio]} />
+                {OSCAR_BIO[activeBio] && <BioBlock index={activeBio} {...OSCAR_BIO[activeBio]} />}
               </div>
             </div>
 

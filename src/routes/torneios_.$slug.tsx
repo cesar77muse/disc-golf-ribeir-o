@@ -87,6 +87,14 @@ function TournamentDetailPage() {
             <h2 className="text-2xl font-bold">Sobre o torneio</h2>
             <p className="mt-4 text-muted-foreground">{tournament.description}</p>
 
+            {tournament.pdgaLink && /^https?:\/\//i.test(tournament.pdgaLink) && (
+              <Button asChild variant="outline" className="mt-5 border-acid text-acid hover:bg-acid/10 hover:text-acid">
+                <a href={tournament.pdgaLink} target="_blank" rel="noopener noreferrer">
+                  Ver torneio na PDGA <ExternalLink className="ml-2 h-4 w-4" />
+                </a>
+              </Button>
+            )}
+
             <h3 className="mt-10 text-xl font-bold">Divisões e valores</h3>
             <div className="mt-4 grid gap-4 sm:grid-cols-2">
               {tournament.divisions.map((d) => (
