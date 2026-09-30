@@ -1,4 +1,4 @@
-import { createFileRoute } from "@tanstack/react-router";
+import { createFileRoute, useRouter } from "@tanstack/react-router";
 import { useMemo, useState } from "react";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
@@ -26,6 +26,7 @@ import {
   STATUS_LABEL,
   formatBRL,
 } from "@/lib/registration-display";
+import { fetchCurrentProfile } from "@/lib/profiles";
 import {
   fetchRegistrations,
   type Registration,
@@ -42,16 +43,21 @@ export const Route = createFileRoute("/_authenticated/admin/inscricoes")({
     const torneio = search["torneio"];
     return typeof torneio === "string" ? { torneio } : {};
   },
-  loader: async () => ({
-    registrations: await fetchRegistrations(),
-  }),
+  loader: async () => {
+    const [registrations, profile] = await Promise.all([
+      fetchRegistrations(),
+      fetchCurrentProfile(),
+    ]);
+    return { registrations, isSuperAdmin: profile?.role === "super_admin" };
+  },
   component: AdminInscricoes,
 });
 
 const ALL = "todos";
 
 function AdminInscricoes() {
-  const { registrations } = Route.useLoaderData();
+  const { registrations, isSuperAdmin } = Route.useLoaderData();
+  const router = useRouter();
   const { torneio } = Route.useSearch();
 
   const [tournamentFilter, setTournamentFilter] = useState(torneio ?? ALL);
@@ -182,6 +188,11 @@ function AdminInscricoes() {
 
       <RegistrationDetailsDialog
         registration={selected}
+        isSuperAdmin={isSuperAdmin}
+        onChanged={async () => {
+          setSelected(null);
+          await router.invalidate();
+        }}
         onOpenChange={(open) => {
           if (!open) setSelected(null);
         }}

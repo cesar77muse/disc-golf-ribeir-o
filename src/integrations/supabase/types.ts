@@ -180,6 +180,9 @@ export type Database = {
           payment_method: string | null
           amount_paid: number | null
           paid_at: string | null
+          manual_confirmed_by: string | null
+          manual_confirmed_at: string | null
+          manual_note: string | null
           notes: string | null
           created_at: string
           updated_at: string
@@ -206,6 +209,9 @@ export type Database = {
           payment_method?: string | null
           amount_paid?: number | null
           paid_at?: string | null
+          manual_confirmed_by?: string | null
+          manual_confirmed_at?: string | null
+          manual_note?: string | null
           notes?: string | null
           created_at?: string
           updated_at?: string
@@ -232,6 +238,9 @@ export type Database = {
           payment_method?: string | null
           amount_paid?: number | null
           paid_at?: string | null
+          manual_confirmed_by?: string | null
+          manual_confirmed_at?: string | null
+          manual_note?: string | null
           notes?: string | null
           created_at?: string
           updated_at?: string

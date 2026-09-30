@@ -33,6 +33,16 @@ type CurrentState = { payment_status: string; mp_payment_id: string | null };
  * approval that already landed. Refunds and chargebacks always win.
  */
 function shouldApply(current: CurrentState, payment: MpPayment): boolean {
+  // A Super Admin confirmed this one by hand (paid outside Mercado Pago), so a
+  // late rejected/cancelled/expired notice for the abandoned attempt must not
+  // undo it. A real approval, refund or chargeback still takes over.
+  if (current.payment_status === "manual") {
+    return (
+      payment.status === "approved" ||
+      payment.status === "refunded" ||
+      payment.status === "charged_back"
+    );
+  }
   if (current.payment_status !== "approved") return true;
   if (payment.status === "refunded" || payment.status === "charged_back") return true;
   // Same payment reporting itself again: harmless to re-apply.

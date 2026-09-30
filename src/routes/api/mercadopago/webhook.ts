@@ -97,8 +97,20 @@ export const Route = createFileRoute("/api/mercadopago/webhook")({
           return new Response(null, { status: 200 });
         }
 
-        if (!(await isValidSignature(request, dataId))) {
+        // Legacy IPN notifications (`?topic=payment&id=...`) are never signed, so
+        // answering them 401 only made Mercado Pago retry them for hours. They are
+        // safe to process: nothing in the notification is trusted, the payment is
+        // fetched from the Mercado Pago API with our own token below and only
+        // applied when its external_reference matches a registration, so a forged
+        // ping can at most trigger a re-check. A request that does carry an
+        // x-signature must still verify.
+        const signed = request.headers.has("x-signature");
+        if (signed && !(await isValidSignature(request, dataId))) {
+          console.warn(`[mercadopago] webhook rejected (401) for payment ${dataId}: invalid signature`);
           return new Response("invalid signature", { status: 401 });
+        }
+        if (!signed) {
+          console.info(`[mercadopago] unsigned legacy notification for payment ${dataId}`);
         }
 
         try {
@@ -106,6 +118,9 @@ export const Route = createFileRoute("/api/mercadopago/webhook")({
           const { applyPayment } = await import("@/lib/payments.server");
 
           const payment = await getPayment(dataId);
+          console.info(
+            `[mercadopago] payment ${dataId}: ${payment.status} / ${payment.statusDetail ?? "-"} (${payment.paymentMethodId ?? "-"})`,
+          );
           const result = await applyPayment(payment);
           if (!result) {
             // Unknown external_reference: nothing we can do with a retry.

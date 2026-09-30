@@ -23,6 +23,7 @@ export const PAYMENT_LABEL: Record<PaymentStatus, string> = {
   cancelled: "Cancelado",
   refunded: "Estornado",
   charged_back: "Contestado",
+  manual: "Manual",
 };
 
 export const PAYMENT_BADGE_CLASS: Record<PaymentStatus, string> = {
@@ -33,6 +34,7 @@ export const PAYMENT_BADGE_CLASS: Record<PaymentStatus, string> = {
   cancelled: "bg-destructive/10 text-destructive",
   refunded: "bg-destructive/10 text-destructive",
   charged_back: "bg-destructive/10 text-destructive",
+  manual: "bg-acid/20 text-foreground",
 };
 
 export function formatBRL(value: number): string {
