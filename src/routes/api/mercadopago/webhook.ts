@@ -98,6 +98,10 @@ export const Route = createFileRoute("/api/mercadopago/webhook")({
         }
 
         if (!(await isValidSignature(request, dataId))) {
+          console.warn(
+            `[mercadopago] webhook rejected (401) for payment ${dataId}: ` +
+              `x-signature ${request.headers.has("x-signature") ? "present but invalid" : "missing"}`,
+          );
           return new Response("invalid signature", { status: 401 });
         }
 
@@ -106,6 +110,9 @@ export const Route = createFileRoute("/api/mercadopago/webhook")({
           const { applyPayment } = await import("@/lib/payments.server");
 
           const payment = await getPayment(dataId);
+          console.info(
+            `[mercadopago] payment ${dataId}: ${payment.status} / ${payment.statusDetail ?? "-"} (${payment.paymentMethodId ?? "-"})`,
+          );
           const result = await applyPayment(payment);
           if (!result) {
             // Unknown external_reference: nothing we can do with a retry.
