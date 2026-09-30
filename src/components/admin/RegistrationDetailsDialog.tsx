@@ -1,4 +1,18 @@
+import { useState } from "react";
+import { toast } from "sonner";
+import {
+  AlertDialog,
+  AlertDialogCancel,
+  AlertDialogContent,
+  AlertDialogDescription,
+  AlertDialogFooter,
+  AlertDialogHeader,
+  AlertDialogTitle,
+} from "@/components/ui/alert-dialog";
 import { Badge } from "@/components/ui/badge";
+import { Button } from "@/components/ui/button";
+import { Textarea } from "@/components/ui/textarea";
+import { confirmRegistrationManually, revertManualConfirmation } from "@/lib/manual-payment";
 import {
   Dialog,
   DialogContent,
@@ -46,13 +60,126 @@ function Section({ title, children }: { title: string; children: React.ReactNode
   );
 }
 
+/** Confirm / undo a payment made outside Mercado Pago. Only rendered for Super Admins. */
+function ManualPaymentActions({
+  registration,
+  onChanged,
+}: {
+  registration: Registration;
+  onChanged: () => void | Promise<void>;
+}) {
+  const [confirming, setConfirming] = useState(false);
+  const [note, setNote] = useState("");
+  const [busy, setBusy] = useState(false);
+
+  const isManual = registration.paymentStatus === "manual";
+  const alreadyPaid = registration.paymentStatus === "approved";
+  if (alreadyPaid) return null;
+
+  const run = async (action: () => Promise<unknown>, success: string) => {
+    setBusy(true);
+    try {
+      await action();
+      toast.success(success);
+      setConfirming(false);
+      setNote("");
+      await onChanged();
+    } catch (error) {
+      toast.error(error instanceof Error ? error.message : "Erro ao atualizar a inscrição");
+    } finally {
+      setBusy(false);
+    }
+  };
+
+  return (
+    <div className="space-y-3 border-t border-border pt-4">
+      <p className="text-xs font-semibold uppercase tracking-wide text-muted-foreground">
+        Pagamento manual
+      </p>
+      {isManual ? (
+        <>
+          <p className="text-sm text-muted-foreground">
+            Confirmada manualmente
+            {registration.manualConfirmedAt
+              ? ` em ${formatDateTime(registration.manualConfirmedAt)}`
+              : ""}
+            .{registration.manualNote ? ` Observação: ${registration.manualNote}` : ""}
+          </p>
+          <Button
+            variant="outline"
+            size="sm"
+            disabled={busy}
+            onClick={() =>
+              run(
+                () => revertManualConfirmation({ data: { registrationId: registration.id } }),
+                "Inscrição voltou para pendente",
+              )
+            }
+          >
+            Voltar para pendente
+          </Button>
+        </>
+      ) : (
+        <>
+          <p className="text-sm text-muted-foreground">
+            Use quando a pessoa pagou direto ao organizador (fora do Mercado Pago). O valor
+            registrado será o da inscrição ({formatBRL(registration.price)}).
+          </p>
+          <Button size="sm" disabled={busy} onClick={() => setConfirming(true)}>
+            Confirmar pagamento manualmente
+          </Button>
+        </>
+      )}
+
+      <AlertDialog open={confirming} onOpenChange={(open) => !busy && setConfirming(open)}>
+        <AlertDialogContent>
+          <AlertDialogHeader>
+            <AlertDialogTitle>Confirmar pagamento de {registration.fullName}?</AlertDialogTitle>
+            <AlertDialogDescription>
+              A inscrição ficará confirmada com {formatBRL(registration.price)} como pago. Descreva
+              como o pagamento foi feito (obrigatório).
+            </AlertDialogDescription>
+          </AlertDialogHeader>
+          <Textarea
+            value={note}
+            onChange={(e) => setNote(e.target.value)}
+            maxLength={500}
+            placeholder="Ex.: Pagou via Pix direto ao organizador em 29/09"
+          />
+          <AlertDialogFooter>
+            <AlertDialogCancel disabled={busy}>Cancelar</AlertDialogCancel>
+            <Button
+              disabled={busy || note.trim().length < 5}
+              onClick={() =>
+                run(
+                  () =>
+                    confirmRegistrationManually({
+                      data: { registrationId: registration.id, note },
+                    }),
+                  "Pagamento confirmado manualmente",
+                )
+              }
+            >
+              Confirmar
+            </Button>
+          </AlertDialogFooter>
+        </AlertDialogContent>
+      </AlertDialog>
+    </div>
+  );
+}
+
 export function RegistrationDetailsDialog({
   registration,
   onOpenChange,
+  isSuperAdmin = false,
+  onChanged,
 }: {
   /** The row to show; null keeps the dialog closed. */
   registration: Registration | null;
   onOpenChange: (open: boolean) => void;
+  isSuperAdmin?: boolean;
+  onChanged?: () => void | Promise<void>;
 }) {
   return (
     <Dialog open={registration !== null} onOpenChange={onOpenChange}>
@@ -102,6 +229,13 @@ export function RegistrationDetailsDialog({
                   {registration.paidAt === null ? EMPTY : formatDateTime(registration.paidAt)}
                 </Field>
               </Section>
+
+              {isSuperAdmin && (
+                <ManualPaymentActions
+                  registration={registration}
+                  onChanged={onChanged ?? (() => {})}
+                />
+              )}
 
               {registration.notes && (
                 <Section title="Observações">

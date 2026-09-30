@@ -59,10 +59,11 @@ function AdminFinanceiro() {
 
   const rows = periodTournaments.map((t) => {
     const tournamentRegistrations = registrations.filter((r) => r.tournamentSlug === t.slug);
-    // Received money only: what Mercado Pago actually captured. amountPaid can
+    // Received money only: what Mercado Pago actually captured, plus payments a
+    // Super Admin confirmed by hand (paid to the organiser outside Mercado Pago). amountPaid can
     // differ from the listed price (a partial refund), so it wins when set.
     const received = tournamentRegistrations
-      .filter((r) => r.paymentStatus === "approved")
+      .filter((r) => r.paymentStatus === "approved" || r.paymentStatus === "manual")
       .reduce((acc, r) => acc + (r.amountPaid ?? r.price), 0);
     // Still payable: a checkout that was started but never approved. Rejected
     // attempts stay here because the player can still come back and pay.
@@ -91,7 +92,8 @@ function AdminFinanceiro() {
       <div className="mb-8">
         <h1 className="text-3xl font-bold">Financeiro</h1>
         <p className="text-muted-foreground">
-          Receita por torneio, com base nos pagamentos confirmados pelo Mercado Pago.
+          Receita por torneio, com base nos pagamentos confirmados pelo Mercado Pago e nas
+          confirmações manuais (pagos por fora).
         </p>
       </div>
 

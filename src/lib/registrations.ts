@@ -6,7 +6,15 @@ export type RegistrationStatus = "pending" | "confirmed" | "cancelled" | "waitli
 
 /** Mercado Pago's payment states — see 20260911000000_registrations_payments.sql. */
 export type PaymentStatus =
-  "pending" | "in_process" | "approved" | "rejected" | "cancelled" | "refunded" | "charged_back";
+  | "pending"
+  | "in_process"
+  | "approved"
+  | "rejected"
+  | "cancelled"
+  | "refunded"
+  | "charged_back"
+  /** Confirmed by a Super Admin for a payment made outside Mercado Pago. */
+  | "manual";
 
 export type Registration = {
   id: string;
@@ -29,6 +37,8 @@ export type Registration = {
   amountPaid: number | null;
   paymentMethod: string | null;
   paidAt: string | null;
+  manualNote: string | null;
+  manualConfirmedAt: string | null;
   notes: string | null;
   createdAt: string;
 };
@@ -36,7 +46,7 @@ export type Registration = {
 const REGISTRATION_FIELDS = `
   id, tournament_id, division_name, price_label, price, full_name, email, phone,
   cpf, city, birth_date, pdga_number, status, payment_status, amount_paid,
-  payment_method, paid_at, notes, created_at,
+  payment_method, paid_at, manual_note, manual_confirmed_at, notes, created_at,
   tournaments ( slug, title )
 `;
 
@@ -58,6 +68,8 @@ type RegistrationRow = {
   amount_paid: number | null;
   payment_method: string | null;
   paid_at: string | null;
+  manual_note: string | null;
+  manual_confirmed_at: string | null;
   notes: string | null;
   created_at: string;
   tournaments: { slug: string; title: string } | null;
@@ -78,6 +90,7 @@ const PAYMENT_STATUSES: readonly string[] = [
   "cancelled",
   "refunded",
   "charged_back",
+  "manual",
 ];
 
 function toPaymentStatus(value: string): PaymentStatus {
@@ -106,6 +119,8 @@ function toRegistration(row: RegistrationRow): Registration {
     amountPaid: row.amount_paid === null ? null : Number(row.amount_paid),
     paymentMethod: row.payment_method,
     paidAt: row.paid_at,
+    manualNote: row.manual_note,
+    manualConfirmedAt: row.manual_confirmed_at,
     notes: row.notes,
     createdAt: row.created_at,
   };
