@@ -34,7 +34,8 @@ function AdminDashboard() {
   const isSuperAdmin = profile?.role === "super_admin";
 
   const nextTournament = tournaments[0];
-  // Só conta quem já pagou: pagamento aprovado pelo Mercado Pago. Inscrição com
+  // Só conta quem já pagou: pagamento aprovado pelo Mercado Pago ou confirmado
+  // manualmente por um Super Admin (pago por fora). Inscrição com
   // pagamento pendente/em análise/recusado não aparece no dashboard. Contagem e
   // receita saem da mesma lista, com o mesmo critério da página Financeiro.
   const paidRegistrations = nextTournament
@@ -42,7 +43,7 @@ function AdminDashboard() {
         (r) =>
           r.tournamentSlug === nextTournament.slug &&
           r.status !== "cancelled" &&
-          r.paymentStatus === "approved",
+          (r.paymentStatus === "approved" || r.paymentStatus === "manual"),
       )
     : [];
   const registeredCount = paidRegistrations.length;
